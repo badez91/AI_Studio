@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1117;
+            color: #e4e4e7;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #27272a;
+        }
+        header h1 { font-size: 1.5rem; font-weight: 600; color: #f4f4f5; }
+        header .badge {
+            font-size: 0.75rem; padding: 0.25rem 0.75rem;
+            background: #22c55e20; color: #4ade80;
+            border-radius: 9999px; border: 1px solid #22c55e40;
+        }
+
+        /* Create Form */
+        .create-form {
+            background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem;
+            padding: 1.5rem; margin-bottom: 2rem;
+        }
+        .create-form h2 {
+            font-size: 1rem; font-weight: 600; color: #f4f4f5; margin-bottom: 1rem;
+        }
+        .form-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
+        .form-group label {
+            font-size: 0.7rem; color: #71717a; text-transform: uppercase;
+            letter-spacing: 0.05em; font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            background: #27272a; border: 1px solid #3f3f46; border-radius: 0.5rem;
+            padding: 0.6rem 0.75rem; color: #f4f4f5; font-size: 0.875rem;
+            outline: none; transition: border-color 0.15s;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: #6366f1; }
+        .form-group input::placeholder { color: #52525b; }
+        .form-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+
+        /* Buttons */
+        button {
+            padding: 0.6rem 1.2rem; border: none; border-radius: 0.5rem;
+            font-size: 0.875rem; font-weight: 500; cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        button:hover { transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-primary:hover { background: #818cf8; }
+        .btn-primary:disabled { background: #3f3f46; color: #71717a; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #27272a; color: #a1a1aa; border: 1px solid #3f3f46; }
+        .btn-secondary:hover { background: #3f3f46; color: #e4e4e7; }
+        .btn-success { background: #059669; color: white; }
+        .btn-success:hover { background: #10b981; }
+        .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.75rem; }
+
+        /* Stats */
+        .stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem; margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: #18181b; border: 1px solid #27272a;
+            border-radius: 0.75rem; padding: 1rem; text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: #f4f4f5; }
+        .stat-label {
+            font-size: 0.7rem; color: #71717a; text-transform: uppercase;
+            letter-spacing: 0.05em; margin-top: 0.25rem;
+        }
+
+        /* Workflow List */
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+        }
+        .section-title {
+            font-size: 0.85rem; font-weight: 600; color: #a1a1aa;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .workflow-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .workflow-card {
+            background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem;
+            padding: 1rem 1.25rem; display: flex; align-items: center;
+            justify-content: space-between; transition: border-color 0.15s ease;
+        }
+        .workflow-card:hover { border-color: #3f3f46; }
+        .workflow-info { display: flex; flex-direction: column; gap: 0.25rem; }
+        .workflow-topic { font-size: 0.9rem; color: #f4f4f5; font-weight: 500; }
+        .workflow-meta {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.7rem; color: #71717a;
+        }
+        .workflow-meta span { margin-right: 0.75rem; }
+        .workflow-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+        /* Status badges */
+        .status {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .status-pending { background: #fbbf2420; color: #fbbf24; border: 1px solid #fbbf2440; }
+        .status-pending .status-dot { background: #fbbf24; }
+        .status-running { background: #3b82f620; color: #60a5fa; border: 1px solid #3b82f640; animation: pulse 2s infinite; }
+        .status-running .status-dot { background: #60a5fa; }
+        .status-completed { background: #22c55e20; color: #4ade80; border: 1px solid #22c55e40; }
+        .status-completed .status-dot { background: #4ade80; }
+        .status-failed { background: #ef444420; color: #f87171; border: 1px solid #ef444440; }
+        .status-failed .status-dot { background: #f87171; }
+        .status-cancelled { background: #71717a20; color: #a1a1aa; border: 1px solid #71717a40; }
+        .status-cancelled .status-dot { background: #a1a1aa; }
+
+        .empty-state { text-align: center; padding: 3rem 1rem; color: #71717a; }
+        .empty-state p { margin-top: 0.5rem; font-size: 0.875rem; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            padding: 0.75rem 1.25rem; border-radius: 0.5rem;
+            font-size: 0.85rem; font-weight: 500;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.3s ease; z-index: 1000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { background: #059669; color: white; }
+        .toast-error { background: #dc2626; color: white; }
+        .toast-info { background: #2563eb; color: white; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 AI Studio</h1>
+            <span class="badge" id="health-badge">Checking...</span>
+        </header>
+
+        <!-- Create Video Form -->
+        <div class="create-form">
+            <h2>🎥 Create Video</h2>
+            <div class="form-row">
+                <div class="form-group" style="flex: 3;">
+                    <label for="topic">Topic / Prompt</label>
+                    <input type="text" id="topic" placeholder="e.g. Why Volcanoes Erupt, How AI Works, The History of Coffee..." />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="style">Style</label>
+                    <select id="style">
+                        <option value="default">Default</option>
+                        <option value="pixar">Pixar</option>
+                        <option value="documentary">Documentary</option>
+                        <option value="explainer">Explainer</option>
+                        <option value="cinematic">Cinematic</option>
+                        <option value="cartoon">Cartoon</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="duration">Duration</label>
+                    <select id="duration">
+                        <option value="1m">1 minute</option>
+                        <option value="3m">3 minutes</option>
+                        <option value="5m" selected>5 minutes</option>
+                        <option value="10m">10 minutes</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn-primary" id="create-btn" onclick="createVideo()">🚀 Generate Video</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">-</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-pending">-</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-completed">-</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-failed">-</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+
+        <!-- Workflow List -->
+        <div class="section-header">
+            <span class="section-title">Workflows</span>
+            <button class="btn-secondary btn-sm" onclick="refreshWorkflows()">↻ Refresh</button>
+        </div>
+        <div class="workflow-list" id="workflow-list">
+            <div class="empty-state">
+                <p>No workflows yet. Enter a topic above to generate your first video.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        let workflows = [];
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                const badge = document.getElementById('health-badge');
+                if (data.status === 'ok') {
+                    badge.textContent = '● Online';
+                    badge.style.background = '#22c55e20';
+                    badge.style.color = '#4ade80';
+                    badge.style.borderColor = '#22c55e40';
+                } else {
+                    badge.textContent = '● Offline';
+                    badge.style.background = '#ef444420';
+                    badge.style.color = '#f87171';
+                }
+            } catch {
+                const badge = document.getElementById('health-badge');
+                badge.textContent = '● Offline';
+                badge.style.background = '#ef444420';
+                badge.style.color = '#f87171';
+            }
+        }
+
+        async function createVideo() {
+            const topic = document.getElementById('topic').value.trim();
+            if (!topic) {
+                showToast('Please enter a topic for your video', 'error');
+                document.getElementById('topic').focus();
+                return;
+            }
+
+            const style = document.getElementById('style').value;
+            const duration = document.getElementById('duration').value;
+            const btn = document.getElementById('create-btn');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Creating...';
+
+            try {
+                const res = await fetch(`${API_BASE}/workflows`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, style, duration }),
+                });
+                const data = await res.json();
+                showToast(`Video workflow created for "${topic}"`, 'success');
+                document.getElementById('topic').value = '';
+                await refreshWorkflows();
+
+                // Auto-execute the workflow
+                await executeWorkflow(data.workflow_id);
+            } catch (err) {
+                showToast('Failed to create workflow', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Generate Video';
+            }
+        }
+
+        async function executeWorkflow(id) {
+            try {
+                const res = await fetch(`${API_BASE}/workflows/${id}/execute`, { method: 'POST' });
+                if (res.status === 409) {
+                    const data = await res.json();
+                    showToast(data.detail, 'info');
+                    return;
+                }
+                const data = await res.json();
+                showToast(`Pipeline ${data.state}`, 'success');
+                await refreshWorkflows();
+            } catch (err) {
+                showToast('Execution failed', 'error');
+                await refreshWorkflows();
+            }
+        }
+
+        async function refreshWorkflows() {
+            try {
+                const res = await fetch(`${API_BASE}/workflows`);
+                if (!res.ok) { workflows = []; renderWorkflows(); return; }
+                workflows = await res.json();
+                renderWorkflows();
+                updateStats();
+            } catch { workflows = []; renderWorkflows(); }
+        }
+
+        function renderWorkflows() {
+            const container = document.getElementById('workflow-list');
+            if (workflows.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No workflows yet. Enter a topic above to generate your first video.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = workflows.map(wf => {
+                const canExecute = wf.status === 'pending' || wf.status === 'failed';
+                const resumeLabel = wf.status === 'failed' ? '↻ Resume' : '▶ Run';
+                const btn = canExecute
+                    ? `<button class="btn-success btn-sm" onclick="executeWorkflow('${wf.id}')">${resumeLabel}</button>`
+                    : '';
+
+                const topic = wf.topic || wf.name || 'Untitled';
+                const meta = [
+                    wf.style ? `style: ${wf.style}` : '',
+                    wf.duration ? `duration: ${wf.duration}` : '',
+                    `id: ${wf.id.slice(0, 8)}`,
+                ].filter(Boolean).join(' · ');
+
+                return `
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <span class="workflow-topic">${escapeHtml(topic)}</span>
+                            <span class="workflow-meta">${meta}</span>
+                        </div>
+                        <div class="workflow-actions">
+                            <span class="status status-${wf.status}">
+                                <span class="status-dot"></span>
+                                ${wf.status}
+                            </span>
+                            ${btn}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function updateStats() {
+            const total = workflows.length;
+            const pending = workflows.filter(w => w.status === 'pending').length;
+            const completed = workflows.filter(w => w.status === 'completed').length;
+            const failed = workflows.filter(w => w.status === 'failed').length;
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-failed').textContent = failed;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => { toast.className = 'toast'; }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Submit on Enter key in topic field
+        document.getElementById('topic').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') createVideo();
+        });
+
+        // Initial load
+        checkHealth();
+        refreshWorkflows();
+        setInterval(refreshWorkflows, 5000);
+        setInterval(checkHealth, 10000);
+    </script>
+</body>
+</html>
