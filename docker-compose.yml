@@ -1,0 +1,16 @@
+services:
+  ai-studio:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: ai-studio
+      ENVIRONMENT: development
+      DEBUG: "true"
+      LOG_LEVEL: INFO
+      DATABASE_URL: sqlite:///./ai_studio.db
+      CACHE_DIR: cache
+    volumes:
+      - .:/app

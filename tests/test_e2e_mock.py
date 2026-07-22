@@ -1,0 +1,125 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from app.api.main import create_app
+from app.agents.script_writer import ScriptWriterAgent
+from app.agents.storyboard import StoryboardAgent
+from app.agents.image import ImageGenerationAgent
+from app.agents.voice import VoiceGenerationAgent
+from app.agents.music import MusicAgent
+from app.assets.asset_manager import AssetManager
+from app.providers.mock import MockMediaProvider
+from app.services.composer import Composer
+from app.agents.reviewer import ReviewerAgent
+
+
+def test_end_to_end_mock(tmp_path: Path) -> None:
+    """Mock end-to-end flow that runs API submit/execute and an in-process media pipeline.
+
+    This test is deterministic and uses the existing mock agent implementations
+    (which write text placeholders) to validate a full pipeline from script ->
+    storyboard -> assets -> composition -> review.
+    """
+
+    # --- API smoke flow
+    client = TestClient(create_app())
+
+    post = client.post("/api/v1/workflows")
+    assert post.status_code == 200
+    workflow_id = post.json()["workflow_id"]
+    assert workflow_id == "wf-1"
+
+    status = client.get(f"/api/v1/workflows/{workflow_id}/status")
+    assert status.status_code == 200
+    assert status.json()["state"] == "pending"
+
+    exec_resp = client.post(f"/api/v1/workflows/{workflow_id}/execute")
+    assert exec_resp.status_code == 200
+    assert exec_resp.json()["state"] == "completed"
+
+    # --- Agents and asset generation (mocked to text files)
+    script_agent = ScriptWriterAgent()
+    storyboard_agent = StoryboardAgent()
+    # persist artifacts under the repository `output/e2e_test` folder so results are inspectable
+    repo_root = Path.cwd()
+    out_root = repo_root / "output" / "e2e_test"
+    asset_mgr = AssetManager(root=str(out_root))
+
+    provider = MockMediaProvider()
+    img_agent = ImageGenerationAgent(provider=provider, asset_manager=asset_mgr)
+    voice_agent = VoiceGenerationAgent(provider=provider, asset_manager=asset_mgr)
+    music_agent = MusicAgent(provider=provider, asset_manager=asset_mgr)
+    composer = Composer(default_output=str(out_root / "final.mp4"))
+    reviewer = ReviewerAgent()
+
+    # Mock research input (complete and valid)
+    research = {
+        "topic": "Test Topic",
+        "summary": "A short summary of the test topic.",
+        "sources": ["source-1"],
+        "key_points": ["First point", "Second point"],
+    }
+
+    # Produce script and storyboard
+    script = script_agent.run(
+        {
+            "topic": research["topic"],
+            "summary": research["summary"],
+            "key_points": research["key_points"],
+        }
+    )
+
+    storyboard = storyboard_agent.run({"topic": research["topic"], "sections": script["sections"]})
+
+    # Generate assets per scene/section and collect them for composition
+    assets: list[dict] = []
+
+    for idx, scene in enumerate(storyboard["scenes"]):
+        section = script["sections"][idx]
+
+        # support both dict and dataclass return shapes
+        prompt = scene["prompt"] if isinstance(scene, dict) else getattr(scene, "prompt")
+        scene_number = scene["scene_number"] if isinstance(scene, dict) else getattr(scene, "scene_number")
+
+        section_content = section["content"] if isinstance(section, dict) else getattr(section, "content")
+        section_duration = section["duration_seconds"] if isinstance(section, dict) else getattr(section, "duration_seconds")
+
+        img = img_agent.run({"prompt": prompt, "scene": f"scene-{scene_number}"})
+        voice = voice_agent.run(
+            {"script": section_content, "scene": f"scene-{scene_number}", "duration_seconds": section_duration}
+        )
+        music = music_agent.run({"mood": "calm", "duration_seconds": section_duration, "scene": f"scene-{scene_number}"})
+
+        # Verify assets were written to disk
+        assert asset_mgr.exists(img["asset_path"]) is True
+        assert asset_mgr.exists(voice["asset_path"]) is True
+        assert asset_mgr.exists(music["asset_path"]) is True
+
+        # Read back a sample of file contents to ensure data correctness
+        assert asset_mgr.read(img["asset_path"]) == prompt
+        assert asset_mgr.read(voice["asset_path"]) == section_content
+
+        assets.extend(
+            [
+                {"kind": "image", "asset_path": img["asset_path"], "format": img["format"], "duration_seconds": 0, "metadata": img["metadata"]},
+                {"kind": "voice", "asset_path": voice["asset_path"], "format": voice["format"], "duration_seconds": voice["duration_seconds"], "metadata": voice["metadata"]},
+                {"kind": "music", "asset_path": music["asset_path"], "format": music["format"], "duration_seconds": music["duration_seconds"], "metadata": music["metadata"]},
+            ]
+        )
+
+    # Compose a render plan from generated assets
+    plan = composer.compose({"assets": assets, "script": {"total_duration_seconds": sum(a["duration_seconds"] for a in assets)}})
+
+    # Run reviewer
+    review = reviewer.run({"research": research, "script": script, "storyboard": storyboard, "assets": assets})
+
+    # Assertions on composition and review
+    assert plan["metadata"]["asset_count"] == len(assets)
+    assert plan["total_duration_seconds"] >= 0
+
+    assert review["passed"] is True
+    assert review["score"] == 1.0
+    assert review["issues"] == []

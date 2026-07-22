@@ -1,0 +1,14 @@
+providers:
+  llm:
+    default: mock
+    backends:
+      - id: mock
+        name: Mock Provider
+        capabilities: [text, chat]
+
+  media:
+    default: mock
+    backends:
+      - id: mock
+        name: Mock Media Provider
+        capabilities: [image, voice]
