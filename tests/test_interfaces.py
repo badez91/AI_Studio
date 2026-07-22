@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 
 from fastapi.testclient import TestClient
 
 from app.api.main import app
 from app.cli.main import app as cli_app
+from app.models.job import Job  # noqa: F401 — register model
+from app.storage.connection import Base, engine
+
+# Ensure test database tables exist.
+Base.metadata.create_all(bind=engine)
 
 client = TestClient(app)
+
+PYTHON = sys.executable
 
 
 def test_health_endpoint() -> None:
@@ -26,6 +34,7 @@ def test_workflow_endpoints() -> None:
     response = client.get(f"/api/v1/workflows/{workflow_id}/status")
     assert response.status_code == 200
     assert response.json()["workflow_id"] == workflow_id
+    assert response.json()["state"] == "pending"
 
     response = client.post(f"/api/v1/workflows/{workflow_id}/execute")
     assert response.status_code == 200
@@ -35,9 +44,28 @@ def test_workflow_endpoints() -> None:
     assert body["results"] == ["hello"]
 
 
+def test_workflow_not_found() -> None:
+    response = client.get("/api/v1/workflows/nonexistent-id/status")
+    assert response.status_code == 404
+
+
+def test_workflow_execute_twice_returns_conflict() -> None:
+    response = client.post("/api/v1/workflows")
+    workflow_id = response.json()["workflow_id"]
+
+    # First execution succeeds.
+    response = client.post(f"/api/v1/workflows/{workflow_id}/execute")
+    assert response.status_code == 200
+    assert response.json()["state"] == "completed"
+
+    # Second execution returns 409 (already completed).
+    response = client.post(f"/api/v1/workflows/{workflow_id}/execute")
+    assert response.status_code == 409
+
+
 def test_cli_status_command() -> None:
     result = subprocess.run(
-        ["python", "-m", "app.cli.main", "status"],
+        [PYTHON, "-m", "app.cli.main", "status"],
         capture_output=True,
         text=True,
     )
@@ -47,7 +75,7 @@ def test_cli_status_command() -> None:
 
 def test_cli_workflow_run_command() -> None:
     result = subprocess.run(
-        ["python", "-m", "app.cli.main", "workflow-run", "demo"],
+        [PYTHON, "-m", "app.cli.main", "workflow-run", "demo"],
         capture_output=True,
         text=True,
     )
@@ -57,7 +85,7 @@ def test_cli_workflow_run_command() -> None:
 
 def test_cli_workflow_status_command() -> None:
     result = subprocess.run(
-        ["python", "-m", "app.cli.main", "workflow-status", "wf-1"],
+        [PYTHON, "-m", "app.cli.main", "workflow-status", "wf-1"],
         capture_output=True,
         text=True,
     )
@@ -67,7 +95,7 @@ def test_cli_workflow_status_command() -> None:
 
 def test_cli_workflow_execute_command() -> None:
     result = subprocess.run(
-        ["python", "-m", "app.cli.main", "workflow-execute", "wf-1"],
+        [PYTHON, "-m", "app.cli.main", "workflow-execute", "wf-1"],
         capture_output=True,
         text=True,
     )

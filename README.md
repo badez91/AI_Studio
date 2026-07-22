@@ -5,75 +5,158 @@ AI Studio is a modular AI workflow platform implemented as an extensible Python 
 ## Status
 
 - All planned tasks in the implementation plan are complete.
-- The repository currently passes `pytest -q` with `90 passed`.
-- Core features include workflow orchestration, provider routing, plugin discovery, asset management, evaluation hooks, and a set of modular agents.
+- The repository currently passes `pytest -q` with `102 passed`.
+- Core features include workflow orchestration, persistent storage, provider routing, plugin discovery, asset management, evaluation hooks, and a set of modular agents.
 
 ## What is implemented
 
-- API and CLI entry points for submitting workflows, checking status, and executing workflows.
-- Workflow engine with sequential step execution, state tracking, and failure handling.
-- Provider abstraction layer with capability-based routing and pluggable providers.
-- Plugin manager with safe discovery and load error handling.
-- Asset manager for artifact staging and filesystem persistence.
-- Telemetry and evaluation helpers for structured workflow observability.
-- Agents for research, fact-check, script writing, storyboard generation, voice, image, music, composition, and review.
+- **Workflow Persistence** — Workflows are persisted to SQLite via SQLAlchemy. Supports resume from failure, conflict detection (409 on re-execute), and UUID-based identification.
+- **Web UI** — A simple browser-based dashboard for submitting, executing, and monitoring workflows.
+- **REST API** — FastAPI endpoints for workflow submission, status queries, and execution.
+- **CLI** — Typer-based commands for workflow operations.
+- **Workflow Engine** — Sequential step execution with state tracking, failure handling, and cancellation.
+- **Provider Abstraction** — Capability-based routing with pluggable AI backends.
+- **Plugin System** — Safe directory-based plugin discovery and loading.
+- **Asset Manager** — Filesystem-based artifact staging and retrieval.
+- **Telemetry & Evaluation** — Structured observability hooks and quality metrics.
+- **9 Agents** — Research, Fact-Check, Script Writer, Storyboard, Voice, Image, Music, Composer, and Reviewer.
 
-## System design review
+## Architecture
 
-### Architecture
-
-- Modular monolith: clear separation between API, CLI, agents, workflows, providers, plugins, services, and storage.
-- Dependency wiring is explicit through a lightweight container pattern.
-- Workflow execution is isolated in `app/workflows/engine.py`, making orchestration logic easy to test and extend.
-- Provider routing is abstracted in `app/providers`, enabling future integration with real AI backends without changing workflow logic.
-
-### User-facing flow
-
-A user or client can:
-
-1. Submit a workflow via `POST /api/v1/workflows`.
-2. Check workflow state via `GET /api/v1/workflows/{workflow_id}/status`.
-3. Execute a workflow via `POST /api/v1/workflows/{workflow_id}/execute`.
-4. Use CLI commands such as:
-   - `python -m app.cli.main status`
-   - `python -m app.cli.main workflow-run "demo"`
-   - `python -m app.cli.main workflow-status wf-1`
-   - `python -m app.cli.main workflow-execute wf-1`
-
-### User experience
-
-- The platform is designed to be approachable from both API and CLI.
-- Workflow operations return deterministic states and structured results for easy automation.
-- Asset generation steps currently produce structured placeholder artifacts and can be extended with real media provider implementations.
-- The review and telemetry layers provide quality signals and can be used to validate outputs before publishing.
+```
+User ──→ Web UI / CLI / API
+              │
+              ▼
+        FastAPI Router
+              │
+              ▼
+     WorkflowRepository ←──→ SQLite (Job persistence)
+              │
+              ▼
+       WorkflowEngine
+              │
+     ┌────────┼────────┐
+     ▼        ▼        ▼
+  Agents   Providers  EventBus
+     │        │
+     ▼        ▼
+AssetManager  AI Backends (mock/real)
+```
 
 ## How to run
 
-1. Create a Python virtual environment:
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate
-   ```
-2. Install requirements:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Start the API:
-   ```bash
-   uvicorn app.api.main:create_app --factory --reload
-   ```
-4. Use the CLI:
-   ```bash
-   python -m app.cli.main status
-   python -m app.cli.main workflow-run demo
-   ```
-5. Run tests:
-   ```bash
-   pytest -q
-   ```
+### 1. Setup
+
+```bash
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Start the API server
+
+```bash
+uvicorn app.api.main:app --reload --port 8000
+```
+
+### 3. Open the Web UI
+
+Open your browser to: **http://localhost:8000/ui**
+
+The UI provides:
+- Submit new workflows
+- View all workflows with status
+- Execute pending/failed workflows
+- Resume failed workflows automatically
+- Real-time status refresh
+
+### 4. Use the CLI
+
+```bash
+python -m app.cli.main status
+python -m app.cli.main workflow-run demo
+python -m app.cli.main workflow-status <workflow-id>
+python -m app.cli.main workflow-execute <workflow-id>
+```
+
+### 5. Use the API directly
+
+```bash
+# Submit a workflow
+curl -X POST http://localhost:8000/api/v1/workflows
+
+# Check status
+curl http://localhost:8000/api/v1/workflows/{id}/status
+
+# Execute
+curl -X POST http://localhost:8000/api/v1/workflows/{id}/execute
+```
+
+### 6. Run tests
+
+```bash
+pytest -q
+```
+
+### 7. Docker
+
+```bash
+docker-compose up --build
+```
+
+## API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/api/v1/workflows` | POST | Create new workflow (returns UUID) |
+| `/api/v1/workflows/{id}/status` | GET | Get workflow state |
+| `/api/v1/workflows/{id}/execute` | POST | Execute or resume workflow |
+| `/api/v1/workflows` | GET | List all workflows |
+| `/ui` | GET | Web dashboard |
+
+## Configuration
+
+Copy `.env.example` to `.env` and adjust:
+
+```env
+APP_NAME=ai-studio
+ENVIRONMENT=development
+DEBUG=false
+LOG_LEVEL=INFO
+DATABASE_URL=sqlite:///./ai_studio.db
+```
+
+## Project Structure
+
+```
+app/
+├── api/          # FastAPI routes and schemas
+├── agents/       # 9 pipeline agents (research → review)
+├── assets/       # Artifact staging manager
+├── cache/        # Response cache
+├── cli/          # Typer CLI commands
+├── config/       # Settings, container, providers.yaml
+├── evaluation/   # Quality metrics
+├── models/       # SQLAlchemy ORM models (Job)
+├── plugins/      # Plugin system
+├── providers/    # AI backend abstraction
+├── services/     # Composer, EventBus
+├── storage/      # DB connection, WorkflowRepository
+├── static/       # Web UI (HTML/JS)
+├── telemetry/    # Observability hooks
+├── utils/        # Path helpers
+└── workflows/    # Engine, state machine
+```
 
 ## Notes for future work
 
-- Real provider implementations and media generation backends should be added behind the existing provider abstraction.
-- Workflow persistence and resume support can be expanded beyond the current in-memory workflow store.
-- Additional user-facing workflows, publishing adapters, and frontend integration are natural next steps.
+- Real AI provider implementations (Gemini, Ollama, HuggingFace) behind the existing provider abstraction.
+- End-to-end video pipeline workflow definition (chain all 9 agents).
+- Parallel execution for independent steps (Voice/Image/Music).
+- WebSocket-based live progress updates in the UI.
+- Publishing adapters for YouTube, TikTok, Instagram.
