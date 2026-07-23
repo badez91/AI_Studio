@@ -23,6 +23,7 @@ class WorkflowContext:
     current_step: int = 0
     results: list[Any] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    payload: str = ""
 
     def reset(self) -> None:
         self.state = WorkflowState.PENDING

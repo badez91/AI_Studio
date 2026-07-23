@@ -39,12 +39,18 @@ class ScriptWriterAgent:
         sections = self._build_sections(topic, summary, key_points)
         total_duration = sum(section.duration_seconds for section in sections)
 
-        outline = ScriptOutline(
-            topic=topic,
-            sections=sections,
-            total_duration_seconds=total_duration,
-        )
-        return outline.__dict__
+        return {
+            "topic": topic,
+            "sections": [
+                {
+                    "title": s.title,
+                    "content": s.content,
+                    "duration_seconds": s.duration_seconds,
+                }
+                for s in sections
+            ],
+            "total_duration_seconds": total_duration,
+        }
 
     def _build_sections(
         self, topic: str, summary: str, key_points: list[str]

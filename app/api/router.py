@@ -98,11 +98,10 @@ async def execute_workflow(workflow_id: str) -> dict[str, Any]:
         # Build the context from persisted state (enables resume from last step).
         context = repo.to_context(job)
 
-        # For now, a simple demo step. Real pipelines will inject steps dynamically.
-        def hello_step(ctx: WorkflowContext) -> str:
-            return "hello"
+        # Build the full video generation pipeline.
+        from app.workflows.video_pipeline import build_video_pipeline
 
-        steps = [Step(name="hello", handler=hello_step)]
+        steps = build_video_pipeline()
 
         # If resuming a failed workflow, skip already-completed steps.
         if context.state == WorkflowState.FAILED:

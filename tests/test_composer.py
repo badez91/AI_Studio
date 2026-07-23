@@ -52,12 +52,12 @@ def test_composer_track_ordering() -> None:
     result = composer.compose(payload)
     tracks = result["tracks"]
 
-    assert tracks[0].start_seconds == 0.0
-    assert tracks[0].kind == "image"
-    assert tracks[1].start_seconds == 30.0
-    assert tracks[1].kind == "voice"
-    assert tracks[2].start_seconds == 55.0
-    assert tracks[2].kind == "music"
+    assert tracks[0]["start_seconds"] == 0.0
+    assert tracks[0]["kind"] == "image"
+    assert tracks[1]["start_seconds"] == 30.0
+    assert tracks[1]["kind"] == "voice"
+    assert tracks[2]["start_seconds"] == 55.0
+    assert tracks[2]["kind"] == "music"
 
 
 def test_composer_raises_on_empty_assets() -> None:

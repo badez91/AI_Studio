@@ -50,7 +50,21 @@ class Composer:
                 "track_count": len(tracks),
             },
         )
-        return plan.__dict__
+        return {
+            "output_path": plan.output_path,
+            "tracks": [
+                {
+                    "kind": t.kind,
+                    "asset_path": t.asset_path,
+                    "start_seconds": t.start_seconds,
+                    "duration_seconds": t.duration_seconds,
+                    "metadata": t.metadata,
+                }
+                for t in plan.tracks
+            ],
+            "total_duration_seconds": plan.total_duration_seconds,
+            "metadata": plan.metadata,
+        }
 
     def _build_tracks(self, assets: list[Any], script: Any) -> list[Track]:
         tracks: list[Track] = []

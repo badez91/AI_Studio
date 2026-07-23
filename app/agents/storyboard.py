@@ -37,12 +37,20 @@ class StoryboardAgent:
         scenes = self._build_scenes(topic, sections)
         total_duration = sum(scene.duration_seconds for scene in scenes)
 
-        storyboard = Storyboard(
-            topic=topic,
-            scenes=scenes,
-            total_duration_seconds=total_duration,
-        )
-        return storyboard.__dict__
+        return {
+            "topic": topic,
+            "scenes": [
+                {
+                    "scene_number": s.scene_number,
+                    "title": s.title,
+                    "description": s.description,
+                    "duration_seconds": s.duration_seconds,
+                    "prompt": s.prompt,
+                }
+                for s in scenes
+            ],
+            "total_duration_seconds": total_duration,
+        }
 
     def _build_scenes(self, topic: str, sections: list[Any]) -> list[StoryboardEntry]:
         scenes: list[StoryboardEntry] = []

@@ -31,11 +31,11 @@ def test_script_writer_sequence_ordering() -> None:
     result = agent.run(payload)
     sections = result["sections"]
 
-    assert sections[0].title.startswith("Introduction:")
-    assert sections[1].title == "Point 1: first"
-    assert sections[2].title == "Point 2: second"
-    assert sections[3].title == "Point 3: third"
-    assert sections[4].title == "Conclusion"
+    assert sections[0]["title"].startswith("Introduction:")
+    assert sections[1]["title"] == "Point 1: first"
+    assert sections[2]["title"] == "Point 2: second"
+    assert sections[3]["title"] == "Point 3: third"
+    assert sections[4]["title"] == "Conclusion"
     assert result["total_duration_seconds"] == 50
 
 
@@ -68,4 +68,4 @@ def test_script_writer_custom_duration() -> None:
 
     result = agent.run(payload)
     assert result["total_duration_seconds"] == 180
-    assert result["sections"][0].duration_seconds == 60
+    assert result["sections"][0]["duration_seconds"] == 60

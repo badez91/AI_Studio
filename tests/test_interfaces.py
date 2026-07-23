@@ -25,7 +25,7 @@ def test_health_endpoint() -> None:
 
 
 def test_workflow_endpoints() -> None:
-    response = client.post("/api/v1/workflows")
+    response = client.post("/api/v1/workflows", json={"topic": "Test Topic", "style": "default", "duration": "1m"})
     assert response.status_code == 200
     data = response.json()
     assert "workflow_id" in data
@@ -41,7 +41,7 @@ def test_workflow_endpoints() -> None:
     body = response.json()
     assert body["workflow_id"] == workflow_id
     assert body["state"] == "completed"
-    assert body["results"] == ["hello"]
+    assert len(body["results"]) == 9  # full pipeline: 9 agents
 
 
 def test_workflow_not_found() -> None:
@@ -50,7 +50,7 @@ def test_workflow_not_found() -> None:
 
 
 def test_workflow_execute_twice_returns_conflict() -> None:
-    response = client.post("/api/v1/workflows")
+    response = client.post("/api/v1/workflows", json={"topic": "Conflict Test"})
     workflow_id = response.json()["workflow_id"]
 
     # First execution succeeds.
@@ -81,6 +81,7 @@ def test_cli_workflow_run_command() -> None:
     )
     assert result.returncode == 0
     assert "Workflow 'demo' executed" in result.stdout
+    assert "completed" in result.stdout
 
 
 def test_cli_workflow_status_command() -> None:

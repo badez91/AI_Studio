@@ -79,6 +79,7 @@ class WorkflowRepository:
             current_step=job.current_step,
             results=list(job.results),
             errors=list(job.errors),
+            payload=job.payload or "",
         )
 
     def sync_from_context(self, job, context: WorkflowContext):
