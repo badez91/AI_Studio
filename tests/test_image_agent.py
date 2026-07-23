@@ -35,6 +35,7 @@ def test_image_agent_generates_artifact(tmp_path: Path) -> None:
 
     result = agent.run(payload)
 
+    assert result["kind"] == "image"
     assert result["format"] == "mock-image"
     assert result["width"] == 1024
     assert result["height"] == 768

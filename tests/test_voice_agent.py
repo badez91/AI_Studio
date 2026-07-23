@@ -34,6 +34,7 @@ def test_voice_agent_generates_artifact(tmp_path: Path) -> None:
 
     result = agent.run(payload)
 
+    assert result["kind"] == "voice"
     assert result["format"] == "mock-audio"
     assert result["duration_seconds"] == 15
     assert "intro" in result["asset_path"]

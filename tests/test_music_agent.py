@@ -34,6 +34,7 @@ def test_music_agent_generates_artifact(tmp_path: Path) -> None:
 
     result = agent.run(payload)
 
+    assert result["kind"] == "music"
     assert result["format"] == "mock-music"
     assert result["duration_seconds"] == 120
     assert result["mood"] == "calm"

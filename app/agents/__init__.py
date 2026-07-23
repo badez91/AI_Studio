@@ -1,6 +1,6 @@
 """Agent abstractions for AI Studio."""
 
-from app.agents.base import BaseAgent, ResearchResult
+from app.agents.base import BaseAgent, MediaAsset, ResearchResult
 from app.agents.fact_check import FactCheckAgent
 from app.agents.image import ImageArtifact, ImageGenerationAgent
 from app.agents.music import MusicArtifact, MusicAgent
@@ -15,6 +15,7 @@ __all__ = [
     "FactCheckAgent",
     "ImageArtifact",
     "ImageGenerationAgent",
+    "MediaAsset",
     "MusicArtifact",
     "MusicAgent",
     "ResearchAgent",

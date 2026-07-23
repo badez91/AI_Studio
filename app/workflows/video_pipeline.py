@@ -22,7 +22,8 @@ from app.workflows.state import WorkflowContext
 
 def _get_text_provider() -> Provider:
     """Get the best available text provider (Ollama if running, else mock)."""
-    use_ollama = os.environ.get("AI_PROVIDER", "auto")
+    # Default to mock provider unless explicitly configured to use Ollama.
+    use_ollama = os.environ.get("AI_PROVIDER", "mock")
 
     if use_ollama == "mock":
         return MockTextProvider()
@@ -138,6 +139,7 @@ def voice_step(ctx: WorkflowContext) -> dict[str, Any]:
         text_to_speech(content, audio_path)
 
         artifacts.append({
+            "kind": "voice",
             "asset_path": audio_path,
             "format": "mp3",
             "duration_seconds": duration,
@@ -176,6 +178,7 @@ def image_step(ctx: WorkflowContext) -> dict[str, Any]:
         )
 
         artifacts.append({
+            "kind": "image",
             "asset_path": image_path,
             "format": "png",
             "width": 1280,

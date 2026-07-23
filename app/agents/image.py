@@ -1,26 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Any
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, ImageAsset, ImageAsset
 from app.assets.asset_manager import AssetManager
 from app.providers.base import Provider
 
 
-@dataclass
-class ImageArtifact:
+class ImageArtifact(ImageAsset):
     """Represents a generated image artifact."""
 
-    asset_path: str
-    format: str
-    width: int
-    height: int
-    metadata: dict[str, Any] = field(default_factory=dict)
+    kind: str = "image"
 
 
 class ImageGenerationAgent:
-    """Supports image generation for storyboard-driven visuals."""
+    """Provider-agnostic image generation abstraction for scene visuals."""
 
     def __init__(
         self,
@@ -39,19 +33,23 @@ class ImageGenerationAgent:
         if not prompt:
             raise ValueError("Missing 'prompt' in payload.")
 
-        artifact = ImageArtifact(
-            asset_path=f"images/{scene or 'scene'}.txt",
-            format="mock-image",
+        provider_name = self.provider.__class__.__name__ if self.provider else "none"
+        asset_path = f"images/{scene or 'scene'}.png"
+        absolute_path = str(self.asset_manager.root / asset_path)
+
+        artifact = ImageAsset(
+            asset_path=asset_path,
+            path=absolute_path,
+            format="image/png",
+            mime_type="image/png",
             width=width,
             height=height,
+            provider=provider_name,
             metadata={
                 "scene": scene,
-                "provider": self.provider.__class__.__name__
-                if self.provider
-                else "none",
+                "provider": provider_name,
+                "prompt": prompt,
             },
         )
-
-        self.asset_manager.write(artifact.asset_path, prompt)
 
         return artifact.__dict__
