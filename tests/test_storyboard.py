@@ -32,12 +32,12 @@ def test_storyboard_scene_ordering() -> None:
     result = agent.run(payload)
     scenes = result["scenes"]
 
-    assert scenes[0].scene_number == 1
-    assert scenes[0].title == "Intro"
-    assert scenes[1].scene_number == 2
-    assert scenes[1].title == "Body"
-    assert scenes[2].scene_number == 3
-    assert scenes[2].title == "Outro"
+    assert scenes[0]["scene_number"] == 1
+    assert scenes[0]["title"] == "Intro"
+    assert scenes[1]["scene_number"] == 2
+    assert scenes[1]["title"] == "Body"
+    assert scenes[2]["scene_number"] == 3
+    assert scenes[2]["title"] == "Outro"
 
 
 def test_storyboard_raises_on_missing_topic() -> None:
@@ -66,8 +66,8 @@ def test_storyboard_nested_scene_data() -> None:
     result = agent.run(payload)
     scene = result["scenes"][0]
 
-    assert scene.scene_number == 1
-    assert scene.title == "Intro"
-    assert scene.description == "Welcome"
-    assert scene.duration_seconds == 10
-    assert "Intro" in scene.prompt
+    assert scene["scene_number"] == 1
+    assert scene["title"] == "Intro"
+    assert scene["description"] == "Welcome"
+    assert scene["duration_seconds"] == 10
+    assert "Intro" in scene["prompt"]

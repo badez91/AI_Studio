@@ -6,7 +6,7 @@ import typer
 
 from app.config.container import build_container
 from app.config.logging import configure_logging
-from app.workflows.engine import Step, WorkflowEngine
+from app.workflows.engine import WorkflowEngine
 from app.workflows.state import WorkflowContext, WorkflowState
 
 app = typer.Typer(add_completion=False, help="AI Studio CLI")
@@ -38,20 +38,23 @@ def status() -> None:
 def workflow_run(name: str) -> None:
     """Run a simple demo workflow."""
 
+    import json
+
+    from app.workflows.video_pipeline import build_video_pipeline
+
     container = build_container()
     settings = container.resolve("settings")
     configure_logging()
 
-    def hello_step(context: WorkflowContext) -> str:
-        return "hello"
-
-    engine = WorkflowEngine([Step(name="hello", handler=hello_step)])
-    context = WorkflowContext()
+    payload = json.dumps({"topic": name, "style": "default", "duration": "5m"})
+    context = WorkflowContext(payload=payload)
+    steps = build_video_pipeline()
+    engine = WorkflowEngine(steps)
     result = engine.run(context)
 
     typer.echo(
         f"Workflow '{name}' executed with state={result.state.value} "
-        f"results={result.results}"
+        f"steps_completed={len(result.results)}"
     )
 
 
@@ -71,20 +74,23 @@ def workflow_status(workflow_id: str) -> None:
 def workflow_execute(workflow_id: str) -> None:
     """Execute a workflow by ID."""
 
+    import json
+
+    from app.workflows.video_pipeline import build_video_pipeline
+
     container = build_container()
     settings = container.resolve("settings")
     configure_logging()
 
-    def hello_step(context: WorkflowContext) -> str:
-        return "hello"
-
-    engine = WorkflowEngine([Step(name="hello", handler=hello_step)])
-    context = WorkflowContext()
+    payload = json.dumps({"topic": workflow_id, "style": "default", "duration": "5m"})
+    context = WorkflowContext(payload=payload)
+    steps = build_video_pipeline()
+    engine = WorkflowEngine(steps)
     result = engine.run(context)
 
     typer.echo(
         f"Workflow '{workflow_id}' executed with state={result.state.value} "
-        f"results={result.results}"
+        f"steps_completed={len(result.results)}"
     )
 
 

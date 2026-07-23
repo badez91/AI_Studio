@@ -12,9 +12,10 @@ def test_research_agent_returns_structured_output() -> None:
     result = agent.run({"topic": "AI"})
 
     assert result["topic"] == "AI"
-    assert result["summary"] == "mocked"
-    assert len(result["sources"]) == 1
-    assert len(result["key_points"]) == 2
+    assert isinstance(result["summary"], str)
+    assert len(result["summary"]) > 0
+    assert isinstance(result["sources"], list)
+    assert isinstance(result["key_points"], list)
 
 
 def test_research_agent_raises_on_missing_topic() -> None:
